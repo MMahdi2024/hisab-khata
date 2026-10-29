@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>হিসাব খাতা</title>
+<meta name="description" content="৩ জন বিক্রেতার প্রতিদিনের কেনা, বিক্রি আর খরচের হিসাব">
+<meta name="theme-color" content="#1d6a45">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@600;700&family=Hind+Siliguri:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f6f1; --surface:#ffffff; --fg:#16231b; --muted:#5b6a60; --line:#d9e2d8;
+  --accent:#1d6a45; --accent-ink:#ffffff; --soft:#e3efe6; --warn:#9a5a12; --loss:#b3392f;
+  --display:"Baloo Da 2","Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif;
+  --body:"Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0f1612; --surface:#17211b; --fg:#e5eee7; --muted:#9aab9f; --line:#2a382f;
+  --accent:#4cb985; --accent-ink:#0b1a11; --soft:#1b2f24; --warn:#e3a85f; --loss:#f0837a; color-scheme:dark}}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px;display:grid;gap:30px}
+h1,h2{font-family:var(--display);font-weight:700;line-height:1.2;margin:0;text-wrap:balance}
+h1{font-size:28px}
+h2{font-size:21px}
+.sub{color:var(--muted);margin:4px 0 0}
+.num{font-variant-numeric:tabular-nums}
+section{display:grid;gap:12px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--soft);border-radius:12px;padding:12px 14px;display:grid;gap:2px;min-width:0}
+.tile .lbl{font-size:13px;color:var(--muted)}
+.tile .big{font-family:var(--display);font-size:25px;font-weight:700}
+.tile.main{grid-column:1/-1;background:var(--accent);color:var(--accent-ink)}
+.tile.main .lbl{color:var(--accent-ink);opacity:.85}
+.tile.main .big{font-size:32px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{display:grid;gap:4px;font-size:14px;color:var(--muted);min-width:0}
+input{font:inherit;font-size:17px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seller{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px}
+.seller h3{margin:0;font-size:17px;font-weight:600}
+.fields{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.res{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:14px;color:var(--muted)}
+.res b{color:var(--fg);font-weight:600}
+.total{background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:14px;display:grid;gap:6px}
+.total .line{display:flex;justify-content:space-between;gap:12px}
+.total .you{font-family:var(--display);font-size:24px;font-weight:700;color:var(--accent)}
+.neg{color:var(--loss)!important}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;font-size:17px;padding:12px 16px;width:100%}
+button.danger{color:var(--loss);border-color:var(--loss)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.hist{display:grid;border-top:1px solid var(--line)}
+.day{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.day .d{font-weight:600}
+.day .meta{font-size:13px;color:var(--muted)}
+.day .p{font-family:var(--display);font-size:20px;font-weight:700;text-align:right;color:var(--accent)}
+.day .acts{grid-column:1/-1;display:flex;gap:8px}
+.day .acts button{font-size:14px;padding:4px 12px}
+.empty{color:var(--muted);padding:12px 0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;max-width:calc(100% - 32px);z-index:5}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+var KEY='hisab-khata-v1';
+var DEF={names:['বিক্রেতা ১','বিক্রেতা ২','বিক্রেতা ৩'],share:40,days:[]};
+var S;
+try{S=JSON.parse(localStorage.getItem(KEY))||DEF}catch(e){S=DEF}
+if(!S.names||!S.days){S=DEF}
+var app=document.getElementById('app');
+
+function pad(n){return (n<10?'0':'')+n}
+var now=new Date();
+var TODAY=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+function bn(n){return Math.round(Math.abs(n)||0).toLocaleString('bn-BD')}
+function tk(n){return (n<0?'−':'')+'৳'+bn(n)}
+function toNum(v){v=String(v==null?'':v).replace(/[০-৯]/g,function(c){return '০১২৩৪৫৬৭৮৯'.indexOf(c)}).replace(/[^0-9.]/g,'');return parseFloat(v)||0}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmtDate(d){try{return new Date(d+'T00:00').toLocaleDateString('bn-BD',{weekday:'short',day:'numeric',month:'long'})}catch(e){return d}}
+function calc(x,share){var p=x.sell-x.buy-x.cost;var pay=p>0?Math.round(p*share/100):0;return {p:p,pay:pay,own:p-pay}}
+function dayCalc(d){var r={sell:0,own:0,pay:0,p:0,buy:0};d.s.forEach(function(x){var c=calc(x,d.share);r.sell+=x.sell;r.buy+=x.buy;r.own+=c.own;r.pay+=c.pay;r.p+=c.p});return r}
+function findDay(d){for(var i=0;i<S.days.length;i++)if(S.days[i].d===d)return S.days[i];return null}
+function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},3500)}
+function save(msg){
+  try{localStorage.setItem(KEY,JSON.stringify(S));toast(msg)}catch(e){toast('সেভ হয়নি। ফোনে জায়গা আছে কি না দেখুন।')}
+  var keep=document.getElementById('date')?document.getElementById('date').value:TODAY;
+  render(keep);
+}
+
+function render(showDate){
+  var month=TODAY.slice(0,7);
+  var mDays=S.days.filter(function(d){return d.d.slice(0,7)===month});
+  var mOwn=0,mSell=0,mPay=0;mDays.forEach(function(d){var r=dayCalc(d);mOwn+=r.own;mSell+=r.sell;mPay+=r.pay});
+  var avg=mDays.length?mOwn/mDays.length:0;
+  var monthName=(function(){try{return new Date(month+'-01T00:00').toLocaleDateString('bn-BD',{month:'long',year:'numeric'})}catch(e){return month}})();
+
+  var h='<div class="wrap">';
+  h+='<header><h1>হিসাব খাতা</h1><p class="sub">সবজি ও ফল · ৩ জন বিক্রেতা · প্রতিদিন সন্ধ্যায় হিসাব</p></header>';
+  h+='<section aria-label="মাসের সারাংশ"><div class="tiles">'
+    +'<div class="tile main"><span class="lbl">'+esc(monthName)+' · আপনার মোট লাভ</span><span class="big num'+(mOwn<0?' neg':'')+'">'+tk(mOwn)+'</span></div>'
+    +'<div class="tile"><span class="lbl">দিনে গড় লাভ</span><span class="big num'+(avg<0?' neg':'')+'">'+tk(avg)+'</span></div>'
+    +'<div class="tile"><span class="lbl">হিসাব হয়েছে</span><span class="big num">'+bn(mDays.length)+' দিন</span></div>'
+    +'<div class="tile"><span class="lbl">মোট বিক্রি</span><span class="big num">'+tk(mSell)+'</span></div>'
+    +'<div class="tile"><span class="lbl">বিক্রেতাদের দেওয়া</span><span class="big num">'+tk(mPay)+'</span></div>'
+    +'</div></section>';
+
+  h+='<section aria-labelledby="entryH"><h2 id="entryH">দিনের হিসাব লিখুন</h2>'
+    +'<div class="row"><label for="date" style="flex:1 1 180px">তারিখ<input id="date" type="date" value="'+(showDate||TODAY)+'"></label></div>'
+    +'<p class="hint">লাভ = বিক্রি − কেনা − খরচ (ভাড়া, চাঁদা)। লাভের <b>'+bn(S.share)+'%</b> বিক্রেতার, বাকিটা আপনার।</p>';
+  for(var i=0;i<3;i++){
+    h+='<div class="seller"><h3>'+esc(S.names[i])+'</h3><div class="fields">'
+      +'<label for="buy'+i+'">মাল কেনা<input id="buy'+i+'" inputmode="numeric" autocomplete="off" placeholder="০"></label>'
+      +'<label for="sell'+i+'">বিক্রির টাকা<input id="sell'+i+'" inputmode="numeric" autocomplete="off" placeholder="০"></label>'
+      +'<label for="cost'+i+'">খরচ<input id="cost'+i+'" inputmode="numeric" autocomplete="off" placeholder="০"></label>'
+      +'</div><div class="res num" id="res'+i+'"></div></div>';
+  }
+  h+='<div class="total num" id="total"></div><button type="button" class="primary" id="saveDay">হিসাব সেভ করুন</button></section>';
+
+  h+='<section aria-labelledby="histH"><h2 id="histH">আগের দিনগুলো</h2><div class="hist">';
+  if(!S.days.length)h+='<div class="empty">এখনো কোনো দিনের হিসাব নেই। ওপরে প্রথম দিনের হিসাব লিখে সেভ করুন।</div>';
+  S.days.forEach(function(d){
+    var r=dayCalc(d);
+    h+='<div class="day"><div><div class="d">'+esc(fmtDate(d.d))+'</div>'
+      +'<div class="meta num">বিক্রি '+tk(r.sell)+' · কেনা '+tk(r.buy)+' · বিক্রেতাদের '+tk(r.pay)+'</div></div>'
+      +'<div class="p num'+(r.own<0?' neg':'')+'">'+tk(r.own)+'</div>'
+      +'<div class="acts"><button type="button" data-open="'+d.d+'">খুলুন / বদলান</button><button type="button" data-del="'+d.d+'">মুছুন</button></div></div>';
+  });
+  h+='</div></section>';
+
+  h+='<section aria-labelledby="setH"><h2 id="setH">সেটিং</h2><div class="fields">';
+  for(var j=0;j<3;j++)h+='<label for="nm'+j+'">বিক্রেতা '+bn(j+1)+'-এর নাম<input id="nm'+j+'" value="'+esc(S.names[j])+'"></label>';
+  h+='</div><div class="row"><label for="share" style="flex:0 1 160px">বিক্রেতার ভাগ (%)<input id="share" inputmode="numeric" value="'+S.share+'"></label>'
+    +'<button type="button" id="saveSet">সেটিং সেভ করুন</button></div>'
+    +'<p class="hint">ভাগের হার বদলালে শুধু এরপরের হিসাবে লাগবে, আগের দিনগুলো আগের হারেই থাকবে।</p></section>';
+
+  h+='<section aria-labelledby="bkH"><h2 id="bkH">ব্যাকআপ</h2>'
+    +'<p class="hint">হিসাব শুধু এই ফোনেই থাকে। অ্যাপ মুছে ফেললে বা ফোন বদলালে হিসাবও চলে যাবে, তাই মাঝে মাঝে ব্যাকআপ ফাইল নামিয়ে রাখুন।</p>'
+    +'<div class="row"><button type="button" id="exp">ব্যাকআপ ফাইল নামান</button>'
+    +'<label for="imp" style="flex:1 1 200px">ব্যাকআপ থেকে ফেরত আনুন<input id="imp" type="file" accept=".json,application/json"></label></div></section>';
+  h+='</div>';
+  app.innerHTML=h;
+  loadDay(showDate||TODAY);
+  bind();
+}
+
+function loadDay(d){
+  var day=findDay(d);
+  for(var i=0;i<3;i++){var x=day?day.s[i]:null;['buy','sell','cost'].forEach(function(k){document.getElementById(k+i).value=x&&x[k]?x[k]:''})}
+  document.getElementById('saveDay').textContent=day?'এই দিনের হিসাব আপডেট করুন':'হিসাব সেভ করুন';
+  update();
+}
+function readForm(){var s=[];for(var i=0;i<3;i++)s.push({buy:toNum(document.getElementById('buy'+i).value),sell:toNum(document.getElementById('sell'+i).value),cost:toNum(document.getElementById('cost'+i).value)});return s}
+function update(){
+  var s=readForm(),tot={p:0,pay:0,own:0,sell:0};
+  s.forEach(function(x,i){
+    var c=calc(x,S.share);tot.p+=c.p;tot.pay+=c.pay;tot.own+=c.own;tot.sell+=x.sell;
+    document.getElementById('res'+i).innerHTML='<span>লাভ <b class="'+(c.p<0?'neg':'')+'">'+tk(c.p)+'</b></span><span>ওর ভাগ <b>'+tk(c.pay)+'</b></span><span>আপনার <b class="'+(c.own<0?'neg':'')+'">'+tk(c.own)+'</b></span>';
+  });
+  document.getElementById('total').innerHTML='<div class="line"><span>মোট বিক্রি</span><b>'+tk(tot.sell)+'</b></div>'
+   +'<div class="line"><span>মোট লাভ</span><b class="'+(tot.p<0?'neg':'')+'">'+tk(tot.p)+'</b></div>'
+   +'<div class="line"><span>বিক্রেতাদের দেবেন</span><b>'+tk(tot.pay)+'</b></div>'
+   +'<div class="line" style="align-items:baseline"><span>আপনার লাভ</span><span class="you'+(tot.own<0?' neg':'')+'">'+tk(tot.own)+'</span></div>';
+}
+
+function bind(){
+  for(var i=0;i<3;i++)['buy','sell','cost'].forEach(function(k){document.getElementById(k+i).addEventListener('input',update)});
+  var dt=document.getElementById('date');
+  dt.addEventListener('change',function(){if(dt.value)loadDay(dt.value)});
+  document.getElementById('saveDay').addEventListener('click',function(){
+    var d=dt.value;if(!d){toast('তারিখ দিন।');return}
+    var s=readForm();
+    if(!s.some(function(x){return x.buy||x.sell})){toast('অন্তত একজনের কেনা বা বিক্রির টাকা লিখুন।');return}
+    var old=findDay(d);
+    if(old){old.s=s}else{S.days.push({d:d,share:S.share,s:s})}
+    S.days.sort(function(a,b){return a.d<b.d?1:-1});
+    save('হিসাব সেভ হয়েছে।');
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-open]'),function(b){
+    b.addEventListener('click',function(){var d=b.getAttribute('data-open');dt.value=d;loadDay(d);document.getElementById('entryH').scrollIntoView({behavior:'smooth'})});
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-del]'),function(b){
+    b.addEventListener('click',function(){
+      if(b.getAttribute('data-sure')){var d=b.getAttribute('data-del');S.days=S.days.filter(function(x){return x.d!==d});save('ওই দিনের হিসাব মুছে ফেলা হয়েছে।');return}
+      b.setAttribute('data-sure','1');b.textContent='নিশ্চিত? আবার চাপুন';b.classList.add('danger');
+      setTimeout(function(){if(b.isConnected){b.removeAttribute('data-sure');b.textContent='মুছুন';b.classList.remove('danger')}},4000);
+    });
+  });
+  document.getElementById('saveSet').addEventListener('click',function(){
+    for(var j=0;j<3;j++){var v=document.getElementById('nm'+j).value.trim();S.names[j]=v||('বিক্রেতা '+bn(j+1))}
+    var sh=toNum(document.getElementById('share').value);if(sh<0||sh>100){toast('ভাগ ০ থেকে ১০০-এর মধ্যে দিন।');return}
+    S.share=sh;save('সেটিং সেভ হয়েছে।');
+  });
+  document.getElementById('exp').addEventListener('click',function(){
+    var blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hisab-backup-'+TODAY+'.json';
+    document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+  });
+  document.getElementById('imp').addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0];if(!f)return;
+    var r=new FileReader();
+    r.onload=function(){try{var x=JSON.parse(r.result);if(!x.names||!x.days)throw 0;S=x;save('ব্যাকআপ থেকে হিসাব ফেরত এসেছে।')}catch(err){toast('ফাইলটা ঠিক নয়। এই অ্যাপের ব্যাকআপ ফাইল বেছে নিন।')}};
+    r.readAsText(f);
+  });
+}
+
+render();
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+})();
+</script>
+</body>
+</html>
